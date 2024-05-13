@@ -185,10 +185,13 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+vim.keymap.set('n', '<C-Left>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
+vim.keymap.set('n', '<C-Right>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+vim.keymap.set('n', '<C-Down>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
+vim.keymap.set('n', '<C-Up>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+
+-- Set python environment
+vim.g.python3_host_prog = '/home/satya/.pyenv/versions/neovim3/bin/python'
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -540,7 +543,7 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -549,7 +552,6 @@ require('lazy').setup({
         --
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- tsserver = {},
-        --
 
         lua_ls = {
           -- cmd = {...},
@@ -598,6 +600,97 @@ require('lazy').setup({
     end,
   },
 
+  {
+    'vhyrro/luarocks.nvim',
+    priority = 1001, -- this plugin needs to run before anything else
+    opts = {
+      rocks = { 'magick' },
+    },
+  },
+  {
+    '3rd/image.nvim',
+    dependencies = { 'luarocks.nvim' },
+    config = function()
+      -- ...
+    end,
+  },
+
+  {
+    {
+      'benlubas/molten-nvim',
+      version = '^1.0.0', -- use version <2.0.0 to avoid breaking changes
+      dependencies = { '3rd/image.nvim' },
+      build = ':UpdateRemotePlugins',
+      init = function()
+        -- these are examples, not defaults. Please see the readme
+        vim.g.molten_image_provider = 'image.nvim'
+        vim.g.molten_output_win_max_height = 20
+        vim.g.molten_wrap_output = true
+        vim.g.molten_virt_text_output = true
+        vim.g.molten_virt_lines_off_by_1 = true
+      end,
+    },
+    {
+      -- see the image.nvim readme for more information about configuring this plugin
+      '3rd/image.nvim',
+      opts = {
+        backend = 'kitty', -- whatever backend you would like to use
+        max_width = 100,
+        max_height = 12,
+        max_height_window_percentage = math.huge,
+        max_width_window_percentage = math.huge,
+        window_overlap_clear_enabled = true, -- toggles images when windows are overlapped
+        window_overlap_clear_ft_ignore = { 'cmp_menu', 'cmp_docs', '' },
+      },
+    },
+  },
+
+  {
+    'quarto-dev/quarto-nvim',
+    opts = {
+      lspFeatures = {
+        languages = { 'r', 'python', 'julia', 'bash', 'html', 'lua' },
+      },
+      closePreviewOnExit = true,
+      completion = {
+        enabled = true,
+      },
+      codeRunner = {
+        enabled = true,
+        default_method = 'molten',
+      },
+    },
+    ft = 'quarto',
+    keys = {
+      { '<leader>qa', ':QuartoActivate<cr>', desc = 'quarto activate' },
+      { '<leader>qp', ":lua require'quarto'.quartoPreview()<cr>", desc = 'quarto preview' },
+      { '<leader>qq', ":lua require'quarto'.quartoClosePreview()<cr>", desc = 'quarto close' },
+      { '<leader>qh', ':QuartoHelp ', desc = 'quarto help' },
+      { '<leader>qe', ":lua require'otter'.export()<cr>", desc = 'quarto export' },
+      { '<leader>qE', ":lua require'otter'.export(true)<cr>", desc = 'quarto export overwrite' },
+      { '<leader>qrr', ':QuartoSendAbove<cr>', desc = 'quarto run to cursor' },
+      { '<leader>qra', ':QuartoSendAll<cr>', desc = 'quarto run all' },
+      { '<leader><cr>', ':SlimeSend<cr>', desc = 'send code chunk' },
+      { '<c-cr>', ':SlimeSend<cr>', desc = 'send code chunk' },
+      { '<c-cr>', '<esc>:SlimeSend<cr>i', mode = 'i', desc = 'send code chunk' },
+      { '<c-cr>', '<Plug>SlimeRegionSend<cr>', mode = 'v', desc = 'send code chunk' },
+      { '<cr>', '<Plug>SlimeRegionSend<cr>', mode = 'v', desc = 'send code chunk' },
+      { '<leader>ctr', ':split term://R<cr>', desc = 'terminal: R' },
+      { '<leader>cti', ':split term://ipython<cr>', desc = 'terminal: ipython' },
+      { '<leader>ctp', ':split term://python<cr>', desc = 'terminal: python' },
+      { '<leader>ctj', ':split term://julia<cr>', desc = 'terminal: julia' },
+    },
+  },
+
+  {
+    'jmbuhr/otter.nvim',
+    opts = {
+      buffers = {
+        set_filetype = true,
+      },
+    },
+  },
+
   { -- Autoformat
     'stevearc/conform.nvim',
     opts = {
@@ -615,7 +708,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'isort', 'black' },
         --
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
@@ -623,7 +716,13 @@ require('lazy').setup({
       },
     },
   },
-
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    config = true,
+    -- use opts = {} for passing setup options
+    -- this is equalent to setup({}) function
+  },
   { -- Autocompletion
     'hrsh7th/nvim-cmp',
     event = 'InsertEnter',
@@ -644,12 +743,12 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
       },
       'saadparwaiz1/cmp_luasnip',
@@ -680,9 +779,9 @@ require('lazy').setup({
         -- No, but seriously. Please read `:help ins-completion`, it is really good!
         mapping = cmp.mapping.preset.insert {
           -- Select the [n]ext item
-          ['<C-n>'] = cmp.mapping.select_next_item(),
+          -- ['<C-n>'] = cmp.mapping.select_next_item(),
           -- Select the [p]revious item
-          ['<C-p>'] = cmp.mapping.select_prev_item(),
+          -- ['<C-p>'] = cmp.mapping.select_prev_item(),
 
           -- Scroll the documentation window [b]ack / [f]orward
           ['<C-b>'] = cmp.mapping.scroll_docs(-4),
@@ -691,12 +790,18 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          --['<C-y>'] = cmp.mapping.confirm { select = true },
 
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
           --  completions whenever it has completion options available.
-          ['<C-Space>'] = cmp.mapping.complete {},
+          ['<CR>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.confirm { select = true }
+            else
+              fallback()
+            end
+          end, { 'i', 's' }),
 
           -- Think of <c-l> as moving to the right of your snippet expansion.
           --  So if you have a snippet that's like:
@@ -706,14 +811,22 @@ require('lazy').setup({
           --
           -- <c-l> will move you to the right of each of the expansion locations.
           -- <c-h> is similar, except moving you backwards.
-          ['<C-l>'] = cmp.mapping(function()
-            if luasnip.expand_or_locally_jumpable() then
+          ['<Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_next_item()
+            elseif luasnip.expand_or_locally_jumpable() then
               luasnip.expand_or_jump()
+            else
+              fallback()
             end
           end, { 'i', 's' }),
-          ['<C-h>'] = cmp.mapping(function()
-            if luasnip.locally_jumpable(-1) then
+          ['<S-Tab>'] = cmp.mapping(function(fallback)
+            if cmp.visible() then
+              cmp.select_prev_item()
+            elseif luasnip.locally_jumpable(-1) then
               luasnip.jump(-1)
+            else
+              fallback()
             end
           end, { 'i', 's' }),
 
@@ -724,6 +837,7 @@ require('lazy').setup({
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
           { name = 'path' },
+          { name = 'otter' },
         },
       }
     end,
@@ -734,16 +848,20 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    --'folke/tokyonight.nvim',
+    --'dasupradyumna/midnight.nvim',
+    'marko-cerovac/material.nvim',
+    lazy = false,
     priority = 1000, -- Make sure to load this before all the other start plugins.
+
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      --vim.cmd.colorscheme 'tokyonight-night'
 
-      -- You can configure highlights by doing something like:
-      vim.cmd.hi 'Comment gui=none'
+      -- Load the colorscheme
+      vim.cmd.colorscheme 'material-oceanic'
     end,
   },
 
